@@ -3,7 +3,7 @@ Package.describe({
 });
 
 Package.on_use(function (api) {
-  api.use(['meteor', "underscore", "templating"]);
+  api.use(['meteor', "underscore", "templating", 'standard-app-packages']);
   api.export('Cordova');
   api.add_files('cordova-ios.js', 'client');
 });
