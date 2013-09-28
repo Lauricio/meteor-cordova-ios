@@ -1,3 +1,12 @@
+
+// for iOS specific logic and styles
+Session.set('ios-webview', 'in-webview-ios');
+
+//
+//      Cordova
+//
+
+
 // Platform: ios
 // 3.0.0-0-ge670de9
 /*
