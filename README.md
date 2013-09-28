@@ -1,6 +1,6 @@
 Cordova: 3.0.0-0-ge670de9
 
-##Packages:
+#Packages:
   - Device
   - InAppBrowser
 
