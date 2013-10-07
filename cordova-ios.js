@@ -1849,9 +1849,3 @@ module.exports = function(strUrl, strWindowName, strWindowFeatures) {
 
 });
 
-
-document.addEventListener("deviceready", onDeviceReady, false);
-
-    function onDeviceReady() {
-        navigator.splashscreen.hide();
-    }
