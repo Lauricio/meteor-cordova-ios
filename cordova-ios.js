@@ -1590,8 +1590,7 @@ module.exports = [
 //      Device
 //
 
-cordova.define("org.apache.cordova.device.device", function(require, exports, module) {
-/*
+cordova.define("org.apache.cordova.device.device", function(require, exports, module) {/*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -1667,20 +1666,6 @@ Device.prototype.getInfo = function(successCallback, errorCallback) {
 module.exports = new Device();
 });
 
-
-/**
- * Get device info
- *
- * @param {Function} successCallback The function to call when the heading data is available
- * @param {Function} errorCallback The function to call when there is an error getting the heading data. (OPTIONAL)
- */
-Device.prototype.getInfo = function(successCallback, errorCallback) {
-    argscheck.checkArgs('fF', 'Device.getInfo', arguments);
-    exec(successCallback, errorCallback, "Device", "getDeviceInfo", []);
-};
-
-module.exports = new Device();
-});
 
 //
 //      InAppBrowser
@@ -1782,6 +1767,7 @@ module.exports = function(strUrl, strWindowName, strWindowFeatures) {
 };
 
 });
+
 
 
 //
