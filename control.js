@@ -1,4 +1,4 @@
-var iosStatusBar = {};
+iosStatusBar = {};
 document.addEventListener("deviceready", onDeviceReady, false);
 
     function onDeviceReady() {
