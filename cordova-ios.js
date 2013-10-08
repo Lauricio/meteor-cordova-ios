@@ -1,7 +1,3 @@
-
-// for iOS specific logic and styles, class name: 'in-webview-ios'
-Session.set('ios-webview', 'in-webview-ios');
-
 //
 //      Cordova
 //
