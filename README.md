@@ -1,4 +1,4 @@
-Cordova: 3.0.0-0-ge670de9
+Cordova: 3.1.0-0-ge670de9
 
 ###Packages:
   - Device
