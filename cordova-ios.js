@@ -1,5 +1,5 @@
 // Platform: ios
-// 3.1.0
+// 3.2.0
 /*
  Licensed to the Apache Software Foundation (ASF) under one
  or more contributor license agreements.  See the NOTICE file
@@ -8,9 +8,9 @@
  to you under the Apache License, Version 2.0 (the
  "License"); you may not use this file except in compliance
  with the License.  You may obtain a copy of the License at
- 
+
      http://www.apache.org/licenses/LICENSE-2.0
- 
+
  Unless required by applicable law or agreed to in writing,
  software distributed under the License is distributed on an
  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -19,8 +19,11 @@
  under the License.
 */
 ;(function() {
-var CORDOVA_JS_BUILD_LABEL = '3.1.0';
+var CORDOVA_JS_BUILD_LABEL = '3.2.0';
 // file: lib/scripts/require.js
+
+/*jshint -W079 */
+/*jshint -W020 */
 
 var require,
     define;
@@ -1021,6 +1024,36 @@ module.exports = iOSExec;
 
 });
 
+// file: lib/common/exec/proxy.js
+define("cordova/exec/proxy", function(require, exports, module) {
+
+
+// internal map of proxy function
+var CommandProxyMap = {};
+
+module.exports = {
+
+    // example: cordova.commandProxy.add("Accelerometer",{getCurrentAcceleration: function(successCallback, errorCallback, options) {...},...);
+    add:function(id,proxyObj) {
+        console.log("adding proxy for " + id);
+        CommandProxyMap[id] = proxyObj;
+        return proxyObj;
+    },
+
+    // cordova.commandProxy.remove("Accelerometer");
+    remove:function(id) {
+        var proxy = CommandProxyMap[id];
+        delete CommandProxyMap[id];
+        CommandProxyMap[id] = null;
+        return proxy;
+    },
+
+    get:function(service,action) {
+        return ( CommandProxyMap[service] ? CommandProxyMap[service][action] : null );
+    }
+};
+});
+
 // file: lib/common/init.js
 define("cordova/init", function(require, exports, module) {
 
@@ -1373,8 +1406,8 @@ var anchorEl = document.createElement('a');
  * For relative URLs, converts them to absolute ones.
  */
 urlutil.makeAbsolute = function(url) {
-  anchorEl.href = url;
-  return anchorEl.href;
+    anchorEl.href = url;
+    return anchorEl.href;
 };
 
 });
@@ -1557,7 +1590,7 @@ require('cordova/init');
 })();
 
 //
-//      Plugins
+//      plugins
 //
 
 cordova.define('cordova/plugin_list', function(require, exports, module) {
@@ -1582,8 +1615,670 @@ module.exports = [
         "clobbers": [
             "navigator.splashscreen"
         ]
+    },
+    {
+        "file": "plugins/org.apache.cordova.statusbar/www/statusbar.js",
+        "id": "org.apache.cordova.statusbar.statusbar",
+        "clobbers": [
+            "window.StatusBar"
+        ]
+    },
+    {
+        "file": "plugins/com.phonegap.plugins.PushPlugin/www/PushNotification.js",
+        "id": "com.phonegap.plugins.PushPlugin.PushNotification",
+        "clobbers": [
+            "PushNotification"
+        ]
+    },
+    {
+        "file": "plugins/org.apache.cordova.dialogs/www/notification.js",
+        "id": "org.apache.cordova.dialogs.notification",
+        "merges": [
+            "navigator.notification"
+        ]
+    },
+    {
+        "file": "plugins/org.apache.cordova.console/www/console-via-logger.js",
+        "id": "org.apache.cordova.console.console",
+        "clobbers": [
+            "console"
+        ]
+    },
+    {
+        "file": "plugins/org.apache.cordova.console/www/logger.js",
+        "id": "org.apache.cordova.console.logger",
+        "clobbers": [
+            "cordova.logger"
+        ]
     }
 ]
+});
+
+//
+//      Push
+//
+
+cordova.define("com.phonegap.plugins.PushPlugin.PushNotification", function(require, exports, module) {var PushNotification = function() {
+};
+
+
+// Call this to register for push notifications. Content of [options] depends on whether we are working with APNS (iOS) or GCM (Android)
+PushNotification.prototype.register = function(successCallback, errorCallback, options) {
+    if (errorCallback == null) { errorCallback = function() {}}
+
+    if (typeof errorCallback != "function")  {
+        console.log("PushNotification.register failure: failure parameter not a function");
+        return
+    }
+
+    if (typeof successCallback != "function") {
+        console.log("PushNotification.register failure: success callback parameter must be a function");
+        return
+    }
+
+    cordova.exec(successCallback, errorCallback, "PushPlugin", "register", [options]);
+};
+
+// Call this to unregister for push notifications
+PushNotification.prototype.unregister = function(successCallback, errorCallback) {
+    if (errorCallback == null) { errorCallback = function() {}}
+
+    if (typeof errorCallback != "function")  {
+        console.log("PushNotification.unregister failure: failure parameter not a function");
+        return
+    }
+
+    if (typeof successCallback != "function") {
+        console.log("PushNotification.unregister failure: success callback parameter must be a function");
+        return
+    }
+
+     cordova.exec(successCallback, errorCallback, "PushPlugin", "unregister", []);
+};
+
+
+// Call this to set the application icon badge
+PushNotification.prototype.setApplicationIconBadgeNumber = function(successCallback, errorCallback, badge) {
+    if (errorCallback == null) { errorCallback = function() {}}
+
+    if (typeof errorCallback != "function")  {
+        console.log("PushNotification.setApplicationIconBadgeNumber failure: failure parameter not a function");
+        return
+    }
+
+    if (typeof successCallback != "function") {
+        console.log("PushNotification.setApplicationIconBadgeNumber failure: success callback parameter must be a function");
+        return
+    }
+
+    cordova.exec(successCallback, errorCallback, "PushPlugin", "setApplicationIconBadgeNumber", [{badge: badge}]);
+};
+
+//-------------------------------------------------------------------
+
+if(!window.plugins) {
+    window.plugins = {};
+}
+if (!window.plugins.pushNotification) {
+    window.plugins.pushNotification = new PushNotification();
+}
+
+if (module.exports) {
+  module.exports = PushNotification;
+}});
+
+//
+//      console console-via-logger
+//
+
+cordova.define("org.apache.cordova.console.console", function(require, exports, module) {/*
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+*/
+
+//------------------------------------------------------------------------------
+
+var logger = require("./logger");
+var utils  = require("cordova/utils");
+
+//------------------------------------------------------------------------------
+// object that we're exporting
+//------------------------------------------------------------------------------
+var console = module.exports;
+
+//------------------------------------------------------------------------------
+// copy of the original console object
+//------------------------------------------------------------------------------
+var WinConsole = window.console;
+
+//------------------------------------------------------------------------------
+// whether to use the logger
+//------------------------------------------------------------------------------
+var UseLogger = false;
+
+//------------------------------------------------------------------------------
+// Timers
+//------------------------------------------------------------------------------
+var Timers = {};
+
+//------------------------------------------------------------------------------
+// used for unimplemented methods
+//------------------------------------------------------------------------------
+function noop() {}
+
+//------------------------------------------------------------------------------
+// used for unimplemented methods
+//------------------------------------------------------------------------------
+console.useLogger = function (value) {
+    if (arguments.length) UseLogger = !!value;
+
+    if (UseLogger) {
+        if (logger.useConsole()) {
+            throw new Error("console and logger are too intertwingly");
+        }
+    }
+
+    return UseLogger;
+};
+
+//------------------------------------------------------------------------------
+console.log = function() {
+    if (logger.useConsole()) return;
+    logger.log.apply(logger, [].slice.call(arguments));
+};
+
+//------------------------------------------------------------------------------
+console.error = function() {
+    if (logger.useConsole()) return;
+    logger.error.apply(logger, [].slice.call(arguments));
+};
+
+//------------------------------------------------------------------------------
+console.warn = function() {
+    if (logger.useConsole()) return;
+    logger.warn.apply(logger, [].slice.call(arguments));
+};
+
+//------------------------------------------------------------------------------
+console.info = function() {
+    if (logger.useConsole()) return;
+    logger.info.apply(logger, [].slice.call(arguments));
+};
+
+//------------------------------------------------------------------------------
+console.debug = function() {
+    if (logger.useConsole()) return;
+    logger.debug.apply(logger, [].slice.call(arguments));
+};
+
+//------------------------------------------------------------------------------
+console.assert = function(expression) {
+    if (expression) return;
+
+    var message = logger.format.apply(logger.format, [].slice.call(arguments, 1));
+    console.log("ASSERT: " + message);
+};
+
+//------------------------------------------------------------------------------
+console.clear = function() {};
+
+//------------------------------------------------------------------------------
+console.dir = function(object) {
+    console.log("%o", object);
+};
+
+//------------------------------------------------------------------------------
+console.dirxml = function(node) {
+    console.log(node.innerHTML);
+};
+
+//------------------------------------------------------------------------------
+console.trace = noop;
+
+//------------------------------------------------------------------------------
+console.group = console.log;
+
+//------------------------------------------------------------------------------
+console.groupCollapsed = console.log;
+
+//------------------------------------------------------------------------------
+console.groupEnd = noop;
+
+//------------------------------------------------------------------------------
+console.time = function(name) {
+    Timers[name] = new Date().valueOf();
+};
+
+//------------------------------------------------------------------------------
+console.timeEnd = function(name) {
+    var timeStart = Timers[name];
+    if (!timeStart) {
+        console.warn("unknown timer: " + name);
+        return;
+    }
+
+    var timeElapsed = new Date().valueOf() - timeStart;
+    console.log(name + ": " + timeElapsed + "ms");
+};
+
+//------------------------------------------------------------------------------
+console.timeStamp = noop;
+
+//------------------------------------------------------------------------------
+console.profile = noop;
+
+//------------------------------------------------------------------------------
+console.profileEnd = noop;
+
+//------------------------------------------------------------------------------
+console.count = noop;
+
+//------------------------------------------------------------------------------
+console.exception = console.log;
+
+//------------------------------------------------------------------------------
+console.table = function(data, columns) {
+    console.log("%o", data);
+};
+
+//------------------------------------------------------------------------------
+// return a new function that calls both functions passed as args
+//------------------------------------------------------------------------------
+function wrappedOrigCall(orgFunc, newFunc) {
+    return function() {
+        var args = [].slice.call(arguments);
+        try { orgFunc.apply(WinConsole, args); } catch (e) {}
+        try { newFunc.apply(console,    args); } catch (e) {}
+    };
+}
+
+//------------------------------------------------------------------------------
+// For every function that exists in the original console object, that
+// also exists in the new console object, wrap the new console method
+// with one that calls both
+//------------------------------------------------------------------------------
+for (var key in console) {
+    if (typeof WinConsole[key] == "function") {
+        console[key] = wrappedOrigCall(WinConsole[key], console[key]);
+    }
+}
+});
+
+//
+//      console
+//
+
+cordova.define("org.apache.cordova.console.logger", function(require, exports, module) {/*
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+*/
+
+//------------------------------------------------------------------------------
+// The logger module exports the following properties/functions:
+//
+// LOG                          - constant for the level LOG
+// ERROR                        - constant for the level ERROR
+// WARN                         - constant for the level WARN
+// INFO                         - constant for the level INFO
+// DEBUG                        - constant for the level DEBUG
+// logLevel()                   - returns current log level
+// logLevel(value)              - sets and returns a new log level
+// useConsole()                 - returns whether logger is using console
+// useConsole(value)            - sets and returns whether logger is using console
+// log(message,...)             - logs a message at level LOG
+// error(message,...)           - logs a message at level ERROR
+// warn(message,...)            - logs a message at level WARN
+// info(message,...)            - logs a message at level INFO
+// debug(message,...)           - logs a message at level DEBUG
+// logLevel(level,message,...)  - logs a message specified level
+//
+//------------------------------------------------------------------------------
+
+var logger = exports;
+
+var exec    = require('cordova/exec');
+var utils   = require('cordova/utils');
+
+var UseConsole   = false;
+var UseLogger    = true;
+var Queued       = [];
+var DeviceReady  = false;
+var CurrentLevel;
+
+var originalConsole = console;
+
+/**
+ * Logging levels
+ */
+
+var Levels = [
+    "LOG",
+    "ERROR",
+    "WARN",
+    "INFO",
+    "DEBUG"
+];
+
+/*
+ * add the logging levels to the logger object and
+ * to a separate levelsMap object for testing
+ */
+
+var LevelsMap = {};
+for (var i=0; i<Levels.length; i++) {
+    var level = Levels[i];
+    LevelsMap[level] = i;
+    logger[level]    = level;
+}
+
+CurrentLevel = LevelsMap.WARN;
+
+/**
+ * Getter/Setter for the logging level
+ *
+ * Returns the current logging level.
+ *
+ * When a value is passed, sets the logging level to that value.
+ * The values should be one of the following constants:
+ *    logger.LOG
+ *    logger.ERROR
+ *    logger.WARN
+ *    logger.INFO
+ *    logger.DEBUG
+ *
+ * The value used determines which messages get printed.  The logging
+ * values above are in order, and only messages logged at the logging
+ * level or above will actually be displayed to the user.  E.g., the
+ * default level is WARN, so only messages logged with LOG, ERROR, or
+ * WARN will be displayed; INFO and DEBUG messages will be ignored.
+ */
+logger.level = function (value) {
+    if (arguments.length) {
+        if (LevelsMap[value] === null) {
+            throw new Error("invalid logging level: " + value);
+        }
+        CurrentLevel = LevelsMap[value];
+    }
+
+    return Levels[CurrentLevel];
+};
+
+/**
+ * Getter/Setter for the useConsole functionality
+ *
+ * When useConsole is true, the logger will log via the
+ * browser 'console' object.
+ */
+logger.useConsole = function (value) {
+    if (arguments.length) UseConsole = !!value;
+
+    if (UseConsole) {
+        if (typeof console == "undefined") {
+            throw new Error("global console object is not defined");
+        }
+
+        if (typeof console.log != "function") {
+            throw new Error("global console object does not have a log function");
+        }
+
+        if (typeof console.useLogger == "function") {
+            if (console.useLogger()) {
+                throw new Error("console and logger are too intertwingly");
+            }
+        }
+    }
+
+    return UseConsole;
+};
+
+/**
+ * Getter/Setter for the useLogger functionality
+ *
+ * When useLogger is true, the logger will log via the
+ * native Logger plugin.
+ */
+logger.useLogger = function (value) {
+    // Enforce boolean
+    if (arguments.length) UseLogger = !!value;
+    return UseLogger;
+};
+
+/**
+ * Logs a message at the LOG level.
+ *
+ * Parameters passed after message are used applied to
+ * the message with utils.format()
+ */
+logger.log   = function(message) { logWithArgs("LOG",   arguments); };
+
+/**
+ * Logs a message at the ERROR level.
+ *
+ * Parameters passed after message are used applied to
+ * the message with utils.format()
+ */
+logger.error = function(message) { logWithArgs("ERROR", arguments); };
+
+/**
+ * Logs a message at the WARN level.
+ *
+ * Parameters passed after message are used applied to
+ * the message with utils.format()
+ */
+logger.warn  = function(message) { logWithArgs("WARN",  arguments); };
+
+/**
+ * Logs a message at the INFO level.
+ *
+ * Parameters passed after message are used applied to
+ * the message with utils.format()
+ */
+logger.info  = function(message) { logWithArgs("INFO",  arguments); };
+
+/**
+ * Logs a message at the DEBUG level.
+ *
+ * Parameters passed after message are used applied to
+ * the message with utils.format()
+ */
+logger.debug = function(message) { logWithArgs("DEBUG", arguments); };
+
+// log at the specified level with args
+function logWithArgs(level, args) {
+    args = [level].concat([].slice.call(args));
+    logger.logLevel.apply(logger, args);
+}
+
+// return the correct formatString for an object
+function formatStringForMessage(message) {
+    return (typeof message === "string") ? "" : "%o";
+}
+
+/**
+ * Logs a message at the specified level.
+ *
+ * Parameters passed after message are used applied to
+ * the message with utils.format()
+ */
+logger.logLevel = function(level /* , ... */) {
+    // format the message with the parameters
+    var formatArgs = [].slice.call(arguments, 1);
+    var fmtString = formatStringForMessage(formatArgs[0]);
+    if (fmtString.length > 0){
+        formatArgs.unshift(fmtString); // add formatString
+    }
+
+    var message    = logger.format.apply(logger.format, formatArgs);
+
+    if (LevelsMap[level] === null) {
+        throw new Error("invalid logging level: " + level);
+    }
+
+    if (LevelsMap[level] > CurrentLevel) return;
+
+    // queue the message if not yet at deviceready
+    if (!DeviceReady && !UseConsole) {
+        Queued.push([level, message]);
+        return;
+    }
+
+    // Log using the native logger if that is enabled
+    if (UseLogger) {
+        exec(null, null, "Console", "logLevel", [level, message]);
+    }
+
+    // Log using the console if that is enabled
+    if (UseConsole) {
+        // make sure console is not using logger
+        if (console.useLogger()) {
+            throw new Error("console and logger are too intertwingly");
+        }
+
+        // log to the console
+        switch (level) {
+            case logger.LOG:   originalConsole.log(message); break;
+            case logger.ERROR: originalConsole.log("ERROR: " + message); break;
+            case logger.WARN:  originalConsole.log("WARN: "  + message); break;
+            case logger.INFO:  originalConsole.log("INFO: "  + message); break;
+            case logger.DEBUG: originalConsole.log("DEBUG: " + message); break;
+        }
+    }
+};
+
+
+/**
+ * Formats a string and arguments following it ala console.log()
+ *
+ * Any remaining arguments will be appended to the formatted string.
+ *
+ * for rationale, see FireBug's Console API:
+ *    http://getfirebug.com/wiki/index.php/Console_API
+ */
+logger.format = function(formatString, args) {
+    return __format(arguments[0], [].slice.call(arguments,1)).join(' ');
+};
+
+
+//------------------------------------------------------------------------------
+/**
+ * Formats a string and arguments following it ala vsprintf()
+ *
+ * format chars:
+ *   %j - format arg as JSON
+ *   %o - format arg as JSON
+ *   %c - format arg as ''
+ *   %% - replace with '%'
+ * any other char following % will format it's
+ * arg via toString().
+ *
+ * Returns an array containing the formatted string and any remaining
+ * arguments.
+ */
+function __format(formatString, args) {
+    if (formatString === null || formatString === undefined) return [""];
+    if (arguments.length == 1) return [formatString.toString()];
+
+    if (typeof formatString != "string")
+        formatString = formatString.toString();
+
+    var pattern = /(.*?)%(.)(.*)/;
+    var rest    = formatString;
+    var result  = [];
+
+    while (args.length) {
+        var match = pattern.exec(rest);
+        if (!match) break;
+
+        var arg   = args.shift();
+        rest = match[3];
+        result.push(match[1]);
+
+        if (match[2] == '%') {
+            result.push('%');
+            args.unshift(arg);
+            continue;
+        }
+
+        result.push(__formatted(arg, match[2]));
+    }
+
+    result.push(rest);
+
+    var remainingArgs = [].slice.call(args);
+    remainingArgs.unshift(result.join(''));
+    return remainingArgs;
+}
+
+function __formatted(object, formatChar) {
+
+    try {
+        switch(formatChar) {
+            case 'j':
+            case 'o': return JSON.stringify(object);
+            case 'c': return '';
+        }
+    }
+    catch (e) {
+        return "error JSON.stringify()ing argument: " + e;
+    }
+
+    if ((object === null) || (object === undefined)) {
+        return Object.prototype.toString.call(object);
+    }
+
+    return object.toString();
+}
+
+
+//------------------------------------------------------------------------------
+// when deviceready fires, log queued messages
+logger.__onDeviceReady = function() {
+    if (DeviceReady) return;
+
+    DeviceReady = true;
+
+    for (var i=0; i<Queued.length; i++) {
+        var messageArgs = Queued[i];
+        logger.logLevel(messageArgs[0], messageArgs[1]);
+    }
+
+    Queued = null;
+};
+
+// add a deviceready event to log queued messages
+document.addEventListener("deviceready", logger.__onDeviceReady, false);
 });
 
 //
@@ -1614,7 +2309,8 @@ cordova.define("org.apache.cordova.device.device", function(require, exports, mo
 var argscheck = require('cordova/argscheck'),
     channel = require('cordova/channel'),
     utils = require('cordova/utils'),
-    exec = require('cordova/exec');
+    exec = require('cordova/exec'),
+    cordova = require('cordova');
 
 channel.createSticky('onCordovaInfoReady');
 // Tell cordova channel to wait on the CordovaInfoReady event
@@ -1637,7 +2333,9 @@ function Device() {
 
     channel.onCordovaReady.subscribe(function() {
         me.getInfo(function(info) {
-            var buildLabel = info.cordova;
+            //ignoring info.cordova returning from native, we should use value from cordova.version defined in cordova.js
+            //TODO: CB-5105 native implementations should not return info.cordova
+            var buildLabel = cordova.version;
             me.available = true;
             me.platform = info.platform;
             me.version = info.version;
@@ -1666,11 +2364,125 @@ Device.prototype.getInfo = function(successCallback, errorCallback) {
 module.exports = new Device();
 });
 
+//
+//      Dialogs
+//
+
+cordova.define("org.apache.cordova.dialogs.notification", function(require, exports, module) {/*
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+*/
+
+var exec = require('cordova/exec');
+var platform = require('cordova/platform');
+
+/**
+ * Provides access to notifications on the device.
+ */
+
+module.exports = {
+
+    /**
+     * Open a native alert dialog, with a customizable title and button text.
+     *
+     * @param {String} message              Message to print in the body of the alert
+     * @param {Function} completeCallback   The callback that is called when user clicks on a button.
+     * @param {String} title                Title of the alert dialog (default: Alert)
+     * @param {String} buttonLabel          Label of the close button (default: OK)
+     */
+    alert: function(message, completeCallback, title, buttonLabel) {
+        var _title = (title || "Alert");
+        var _buttonLabel = (buttonLabel || "OK");
+        exec(completeCallback, null, "Notification", "alert", [message, _title, _buttonLabel]);
+    },
+
+    /**
+     * Open a native confirm dialog, with a customizable title and button text.
+     * The result that the user selects is returned to the result callback.
+     *
+     * @param {String} message              Message to print in the body of the alert
+     * @param {Function} resultCallback     The callback that is called when user clicks on a button.
+     * @param {String} title                Title of the alert dialog (default: Confirm)
+     * @param {Array} buttonLabels          Array of the labels of the buttons (default: ['OK', 'Cancel'])
+     */
+    confirm: function(message, resultCallback, title, buttonLabels) {
+        var _title = (title || "Confirm");
+        var _buttonLabels = (buttonLabels || ["OK", "Cancel"]);
+
+        // Strings are deprecated!
+        if (typeof _buttonLabels === 'string') {
+            console.log("Notification.confirm(string, function, string, string) is deprecated.  Use Notification.confirm(string, function, string, array).");
+        }
+
+        // Some platforms take an array of button label names.
+        // Other platforms take a comma separated list.
+        // For compatibility, we convert to the desired type based on the platform.
+        if (platform.id == "android" || platform.id == "ios" || platform.id == "windowsphone" || platform.id == "firefoxos" || platform.id == "ubuntu") {
+
+            if (typeof _buttonLabels === 'string') {
+                var buttonLabelString = _buttonLabels;
+                _buttonLabels = _buttonLabels.split(","); // not crazy about changing the var type here
+            }
+        } else {
+            if (Array.isArray(_buttonLabels)) {
+                var buttonLabelArray = _buttonLabels;
+                _buttonLabels = buttonLabelArray.toString();
+            }
+        }
+        exec(resultCallback, null, "Notification", "confirm", [message, _title, _buttonLabels]);
+    },
+
+    /**
+     * Open a native prompt dialog, with a customizable title and button text.
+     * The following results are returned to the result callback:
+     *  buttonIndex     Index number of the button selected.
+     *  input1          The text entered in the prompt dialog box.
+     *
+     * @param {String} message              Dialog message to display (default: "Prompt message")
+     * @param {Function} resultCallback     The callback that is called when user clicks on a button.
+     * @param {String} title                Title of the dialog (default: "Prompt")
+     * @param {Array} buttonLabels          Array of strings for the button labels (default: ["OK","Cancel"])
+     * @param {String} defaultText          Textbox input value (default: "Default text")
+     */
+    prompt: function(message, resultCallback, title, buttonLabels, defaultText) {
+        var _message = (message || "Prompt message");
+        var _title = (title || "Prompt");
+        var _buttonLabels = (buttonLabels || ["OK","Cancel"]);
+        var _defaultText = (defaultText || "Default text");
+        exec(resultCallback, null, "Notification", "prompt", [_message, _title, _buttonLabels, _defaultText]);
+    },
+
+    /**
+     * Causes the device to beep.
+     * On Android, the default notification ringtone is played "count" times.
+     *
+     * @param {Integer} count       The number of beeps.
+     */
+    beep: function(count) {
+        exec(null, null, "Notification", "beep", [count]);
+    }
+};
+});
 
 //
-//      InAppBrowser
+//      Broser
 //
-
 
 cordova.define("org.apache.cordova.inappbrowser.InAppBrowser", function(require, exports, module) {/*
  *
@@ -1696,6 +2508,7 @@ cordova.define("org.apache.cordova.inappbrowser.InAppBrowser", function(require,
 var exec = require('cordova/exec');
 var channel = require('cordova/channel');
 var modulemapper = require('cordova/modulemapper');
+var urlutil = require('cordova/urlutil');
 
 function InAppBrowser() {
    this.channels = {
@@ -1704,6 +2517,7 @@ function InAppBrowser() {
         'loaderror' : channel.create('loaderror'),
         'exit' : channel.create('exit')
    };
+   this._alive = true;
 }
 
 InAppBrowser.prototype = {
@@ -1713,7 +2527,10 @@ InAppBrowser.prototype = {
         }
     },
     close: function (eventname) {
-        exec(null, null, "InAppBrowser", "close", []);
+        if (this._alive) {
+            this._alive = false;
+            exec(null, null, "InAppBrowser", "close", []);
+        }
     },
     show: function (eventname) {
       exec(null, null, "InAppBrowser", "show", []);
@@ -1751,16 +2568,17 @@ InAppBrowser.prototype = {
 };
 
 module.exports = function(strUrl, strWindowName, strWindowFeatures) {
-    var iab = new InAppBrowser();
-    var cb = function(eventname) {
-       iab._eventHandler(eventname);
-    };
-
     // Don't catch calls that write to existing frames (e.g. named iframes).
     if (window.frames && window.frames[strWindowName]) {
         var origOpenFunc = modulemapper.getOriginalSymbol(window, 'open');
         return origOpenFunc.apply(window, arguments);
     }
+
+    strUrl = urlutil.makeAbsolute(strUrl);
+    var iab = new InAppBrowser();
+    var cb = function(eventname) {
+       iab._eventHandler(eventname);
+    };
 
     exec(cb, cb, "InAppBrowser", "open", [strUrl, strWindowName, strWindowFeatures]);
     return iab;
@@ -1768,10 +2586,8 @@ module.exports = function(strUrl, strWindowName, strWindowFeatures) {
 
 });
 
-
-
 //
-//      Splash Screen
+//      splash
 //
 
 cordova.define("org.apache.cordova.splashscreen.SplashScreen", function(require, exports, module) {/*
@@ -1809,40 +2625,78 @@ var splashscreen = {
 module.exports = splashscreen;
 });
 
+//
+//      Status
+//
 
-//
-//      Status bar
-//
+cordova.define("org.apache.cordova.statusbar.statusbar", function(require, exports, module) {/*
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+*/
 
-//
-//  ActionSheet.js
-//
-// Created by Patrick Heneise, @PatrickHeneise
-//
-// Copyright 2013 Parick Heneise. All rights reserved.
-// MIT Licensed
+var argscheck = require('cordova/argscheck'),
+    utils = require('cordova/utils'),
+    exec = require('cordova/exec');
 
-(function(cordova) {
-    function StatusBar (){};
- 
-  StatusBar.prototype.show = function(callback) {
-    cordova.exec(callback, null, 'StatusBar', 'show', []);
-  };
- 
-  StatusBar.prototype.hide = function(callback) {
-    cordova.exec(callback, null, 'StatusBar', 'hide', []);
-  };
- 
-  StatusBar.prototype.whiteTint = function(callback) {
-    cordova.exec(callback, null, 'StatusBar', 'whiteTint', []);
-  };
- 
-  StatusBar.prototype.blackTint = function(callback) {
-    cordova.exec(callback, null, 'StatusBar', 'blackTint', []);
-  };
+// prime it
+exec(null, null, "StatusBar", "_ready", []);
 
-  cordova.addConstructor(function() {
-    if(!window.plugins) window.plugins = {};
-    window.plugins.statusBar = new StatusBar();
-  });
- })(window.cordova || window.Cordova);
+var StatusBar = function() {
+};
+
+StatusBar.overlaysWebView = function(doOverlay) {
+    exec(null, null, "StatusBar", "overlaysWebView", [doOverlay]);
+};
+
+StatusBar.styleDefault = function() {
+    exec(null, null, "StatusBar", "styleDefault", []);
+};
+
+StatusBar.styleLightContent = function() {
+    exec(null, null, "StatusBar", "styleLightContent", []);
+};
+
+StatusBar.styleBlackTranslucent = function() {
+    exec(null, null, "StatusBar", "styleBlackTranslucent", []);
+};
+
+StatusBar.styleBlackOpaque = function() {
+    exec(null, null, "StatusBar", "styleBlackOpaque", []);
+};
+
+StatusBar.backgroundColorByName = function(colorname) {
+    exec(null, null, "StatusBar", "backgroundColorByName", [colorname]);
+}
+
+StatusBar.backgroundColorByHexString = function(hexString) {
+    exec(null, null, "StatusBar", "backgroundColorByHexString", [hexString]);
+}
+
+StatusBar.hide = function() {
+    exec(null, null, "StatusBar", "hide", []);
+}
+
+StatusBar.show = function() {
+    exec(null, null, "StatusBar", "show", []);
+}
+
+StatusBar.isVisible = true;
+
+module.exports = StatusBar;
+});

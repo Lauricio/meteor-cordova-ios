@@ -1,5 +1,5 @@
 Package.describe({
-  summary: "Cordova 3.0.0 for iOS with core plugins"
+  summary: "Cordova 3.2.0 for iOS with core plugins"
 });
 
 Package.on_use(function (api) {
