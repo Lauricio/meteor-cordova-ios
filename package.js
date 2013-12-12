@@ -4,7 +4,7 @@ Package.describe({
 
 Package.on_use(function (api) {
   api.use(['standard-app-packages']);
-  api.export('Cordova');
+  api.export(['Cordova', 'onNotificationAPN'], 'client');
   api.add_files('cordova-ios.js', 'client');
   api.add_files('control.js', 'client');
 });

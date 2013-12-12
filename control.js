@@ -1,28 +1,53 @@
 // iosStatusBar = {};
  document.addEventListener("deviceready", onDeviceReady, false);
 
+                //  document.addEventListener("resume", function(){
+                //   console.log('%c Resume   ',  'background: #5D76DB; color: white; padding: 1px 15px 1px 5px;');
+                //     // navigator.notification.alert(e.messageFrom);
+                //     alert("Resume")
+                // }, false);
+var newNotification = false;
      function onDeviceReady() {
         StatusBar.styleDefault();
          navigator.splashscreen.hide();
          //iosStatusBar = window.plugins.statusBar;
-         receivedEvent('deviceready');
-        var pushNotification = window.plugins.pushNotification;
-        pushNotification.register(successHandler, errorHandler, {"badge":"true","sound":"true","alert":"true","ecb":"onNotificationAPN"});
+
+          var pushNotification = window.plugins.pushNotification;
+         // alert(pushNotification);
+          var myID = localStorage.getItem('clientStorage');
+          var clientID = JSON.parse(myID);
+          console.log("id:" + clientID);
+          console.log("session" + Session.get('ClientId'));
+          pushNotification.register(successHandler, errorHandler, {"badge":"true","sound":"true","alert":"true","ecb":"onNotificationAPN"});
+          if (newNotification) {
+            console.log('on device ready' + newNotification)
+            alert('newNotification' + newNotification)
+            newNotification = false;
+          }
     }
 
     successHandler = function(result) {
         console.log("Received result " + result);
-        alert('Callback Success! Result = '+result)
+        //alert('Callback Success! Result = '+result)
     }
     errorHandler = function(error) {
-        alert(error);
+       // alert(error);
     }
 
     onNotificationAPN = function(e) {
             console.log("On Notification");
+            console.log(e);
             if (e.alert) {
                 console.log("Alert " + e.alert);
-                navigator.notification.alert(e.alert);
+               // navigator.notification.alert(e.alert);
+            }
+            if (e.messageFrom) {
+              newNotification = e.messageFrom;
+                console.log("messageFrom " + e.messageFrom);
+                // alert(e.messageFrom);
+
+
+
             }
             if (e.badge) {
                 console.log("Badge number " + e.badge);
