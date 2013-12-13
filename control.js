@@ -28,6 +28,15 @@ var newNotification = false;
 
     successHandler = function(result) {
         console.log("Received result " + result);
+        var userID = Meteor.userId() ? Meteor.userId() : Session.get('ClientId');
+        // Meteor.call('tokenApnInsert', result, userID);
+        var doWeHaveToken = ApnTokens.findOne({'apntoken': token});
+        if (doWeHaveToken) {
+          if (doWeHaveToken.userId != userID)
+            ApnTokens.update({'_id': doWeHaveToken._id}, {$set: {userId: userID}})
+        } else {
+          ApnTokens.insert({apntoken:token, userId: userID})
+        }
         //alert('Callback Success! Result = '+result)
     }
     errorHandler = function(error) {
