@@ -6,7 +6,6 @@
                 //     // navigator.notification.alert(e.messageFrom);
                 //     alert("Resume")
                 // }, false);
-var newNotification = false;
      function onDeviceReady() {
         StatusBar.styleDefault();
          navigator.splashscreen.hide();
@@ -19,23 +18,25 @@ var newNotification = false;
           console.log("id:" + clientID);
           console.log("session" + Session.get('ClientId'));
           pushNotification.register(successHandler, errorHandler, {"badge":"true","sound":"true","alert":"true","ecb":"onNotificationAPN"});
-          if (newNotification) {
-            console.log('on device ready' + newNotification)
-            alert('newNotification' + newNotification)
-            newNotification = false;
-          }
     }
 
     successHandler = function(result) {
         console.log("Received result " + result);
         var userID = Meteor.userId() ? Meteor.userId() : Session.get('ClientId');
         // Meteor.call('tokenApnInsert', result, userID);
-        var doWeHaveToken = ApnTokens.findOne({'apntoken': token});
+        var doWeHaveToken = ApnTokens.findOne({'_id': result});
+        console.log(doWeHaveToken)
         if (doWeHaveToken) {
-          if (doWeHaveToken.userId != userID)
-            ApnTokens.update({'_id': doWeHaveToken._id}, {$set: {userId: userID}})
+          if (doWeHaveToken.userId != userID && Meteor.userId())
+            ApnTokens.update({'_id': result}, {$set: {userId: userID}})
         } else {
-          ApnTokens.insert({apntoken:token, userId: userID})
+          ApnTokens.insert({_id:result,
+            userId: userID,
+            devicemodel: device.model,
+            deviceversion: device.version,
+            deviceplatform: device.platform,
+            deviceuuid: device.uuid
+          })
         }
         //alert('Callback Success! Result = '+result)
     }
@@ -51,7 +52,6 @@ var newNotification = false;
                // navigator.notification.alert(e.alert);
             }
             if (e.messageFrom) {
-              newNotification = e.messageFrom;
                 console.log("messageFrom " + e.messageFrom);
                 // alert(e.messageFrom);
 
