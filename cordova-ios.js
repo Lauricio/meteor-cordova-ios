@@ -1,5 +1,5 @@
 // Platform: ios
-// 3.2.0
+// 3.3.0
 /*
  Licensed to the Apache Software Foundation (ASF) under one
  or more contributor license agreements.  See the NOTICE file
@@ -8,9 +8,9 @@
  to you under the Apache License, Version 2.0 (the
  "License"); you may not use this file except in compliance
  with the License.  You may obtain a copy of the License at
-
+ 
      http://www.apache.org/licenses/LICENSE-2.0
-
+ 
  Unless required by applicable law or agreed to in writing,
  software distributed under the License is distributed on an
  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -19,7 +19,7 @@
  under the License.
 */
 ;(function() {
-var CORDOVA_JS_BUILD_LABEL = '3.2.0';
+var CORDOVA_JS_BUILD_LABEL = '3.3.0';
 // file: lib/scripts/require.js
 
 /*jshint -W079 */
@@ -34,7 +34,7 @@ var require,
         requireStack = [],
     // Map of module ID -> index into requireStack of modules currently being built.
         inProgressModules = {},
-        SEPERATOR = ".";
+        SEPARATOR = ".";
 
 
 
@@ -44,7 +44,7 @@ var require,
                 var resultantId = id;
                 //Its a relative path, so lop off the last portion and add the id (minus "./")
                 if (id.charAt(0) === ".") {
-                    resultantId = module.id.slice(0, module.id.lastIndexOf(SEPERATOR)) + SEPERATOR + id.slice(2);
+                    resultantId = module.id.slice(0, module.id.lastIndexOf(SEPARATOR)) + SEPARATOR + id.slice(2);
                 }
                 return require(resultantId);
             };
@@ -507,7 +507,7 @@ function include(parent, objects, clobber, merge) {
                 include(result, obj.children, clobber, merge);
             }
         } catch(e) {
-            utils.alert('Exception building cordova JS globals: ' + e + ' for key "' + key + '"');
+            utils.alert('Exception building Cordova JS globals: ' + e + ' for key "' + key + '"');
         }
     });
 }
@@ -1590,7 +1590,7 @@ require('cordova/init');
 })();
 
 //
-//      plugins
+//      Plugins
 //
 
 cordova.define('cordova/plugin_list', function(require, exports, module) {
@@ -1650,8 +1650,35 @@ module.exports = [
         "clobbers": [
             "cordova.logger"
         ]
+    },
+    {
+        "file": "plugins/org.apache.cordova.media/www/MediaError.js",
+        "id": "org.apache.cordova.media.MediaError",
+        "clobbers": [
+            "window.MediaError"
+        ]
+    },
+    {
+        "file": "plugins/org.apache.cordova.media/www/Media.js",
+        "id": "org.apache.cordova.media.Media",
+        "clobbers": [
+            "window.Media"
+        ]
     }
-]
+];
+module.exports.metadata = 
+// TOP OF METADATA
+{
+    "org.apache.cordova.device": "0.2.5",
+    "org.apache.cordova.inappbrowser": "0.2.5",
+    "org.apache.cordova.splashscreen": "0.2.5",
+    "org.apache.cordova.statusbar": "0.1.3",
+    "com.phonegap.plugins.PushPlugin": "2.1.1",
+    "org.apache.cordova.dialogs": "0.2.4",
+    "org.apache.cordova.console": "0.2.5",
+    "org.apache.cordova.media": "0.2.6"
+}
+// BOTTOM OF METADATA
 });
 
 //
@@ -1695,8 +1722,8 @@ PushNotification.prototype.unregister = function(successCallback, errorCallback)
 
      cordova.exec(successCallback, errorCallback, "PushPlugin", "unregister", []);
 };
-
-
+ 
+ 
 // Call this to set the application icon badge
 PushNotification.prototype.setApplicationIconBadgeNumber = function(successCallback, errorCallback, badge) {
     if (errorCallback == null) { errorCallback = function() {}}
@@ -1728,7 +1755,7 @@ if (module.exports) {
 }});
 
 //
-//      console console-via-logger
+//      Console
 //
 
 cordova.define("org.apache.cordova.console.console", function(require, exports, module) {/*
@@ -1920,9 +1947,6 @@ for (var key in console) {
 }
 });
 
-//
-//      console
-//
 
 cordova.define("org.apache.cordova.console.logger", function(require, exports, module) {/*
  *
@@ -2123,7 +2147,7 @@ function logWithArgs(level, args) {
 
 // return the correct formatString for an object
 function formatStringForMessage(message) {
-    return (typeof message === "string") ? "" : "%o";
+    return (typeof message === "string") ? "" : "%o"; 
 }
 
 /**
@@ -2365,7 +2389,7 @@ module.exports = new Device();
 });
 
 //
-//      Dialogs
+//      Notificatio
 //
 
 cordova.define("org.apache.cordova.dialogs.notification", function(require, exports, module) {/*
@@ -2481,7 +2505,7 @@ module.exports = {
 });
 
 //
-//      Broser
+//      InAppBrowser
 //
 
 cordova.define("org.apache.cordova.inappbrowser.InAppBrowser", function(require, exports, module) {/*
@@ -2587,7 +2611,265 @@ module.exports = function(strUrl, strWindowName, strWindowFeatures) {
 });
 
 //
-//      splash
+//      Media
+//
+
+cordova.define("org.apache.cordova.media.Media", function(require, exports, module) {/*
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+*/
+
+var argscheck = require('cordova/argscheck'),
+    utils = require('cordova/utils'),
+    exec = require('cordova/exec');
+
+var mediaObjects = {};
+
+/**
+ * This class provides access to the device media, interfaces to both sound and video
+ *
+ * @constructor
+ * @param src                   The file name or url to play
+ * @param successCallback       The callback to be called when the file is done playing or recording.
+ *                                  successCallback()
+ * @param errorCallback         The callback to be called if there is an error.
+ *                                  errorCallback(int errorCode) - OPTIONAL
+ * @param statusCallback        The callback to be called when media status has changed.
+ *                                  statusCallback(int statusCode) - OPTIONAL
+ */
+var Media = function(src, successCallback, errorCallback, statusCallback) {
+    argscheck.checkArgs('SFFF', 'Media', arguments);
+    this.id = utils.createUUID();
+    mediaObjects[this.id] = this;
+    this.src = src;
+    this.successCallback = successCallback;
+    this.errorCallback = errorCallback;
+    this.statusCallback = statusCallback;
+    this._duration = -1;
+    this._position = -1;
+    exec(null, this.errorCallback, "Media", "create", [this.id, this.src]);
+};
+
+// Media messages
+Media.MEDIA_STATE = 1;
+Media.MEDIA_DURATION = 2;
+Media.MEDIA_POSITION = 3;
+Media.MEDIA_ERROR = 9;
+
+// Media states
+Media.MEDIA_NONE = 0;
+Media.MEDIA_STARTING = 1;
+Media.MEDIA_RUNNING = 2;
+Media.MEDIA_PAUSED = 3;
+Media.MEDIA_STOPPED = 4;
+Media.MEDIA_MSG = ["None", "Starting", "Running", "Paused", "Stopped"];
+
+// "static" function to return existing objs.
+Media.get = function(id) {
+    return mediaObjects[id];
+};
+
+/**
+ * Start or resume playing audio file.
+ */
+Media.prototype.play = function(options) {
+    exec(null, null, "Media", "startPlayingAudio", [this.id, this.src, options]);
+};
+
+/**
+ * Stop playing audio file.
+ */
+Media.prototype.stop = function() {
+    var me = this;
+    exec(function() {
+        me._position = 0;
+    }, this.errorCallback, "Media", "stopPlayingAudio", [this.id]);
+};
+
+/**
+ * Seek or jump to a new time in the track..
+ */
+Media.prototype.seekTo = function(milliseconds) {
+    var me = this;
+    exec(function(p) {
+        me._position = p;
+    }, this.errorCallback, "Media", "seekToAudio", [this.id, milliseconds]);
+};
+
+/**
+ * Pause playing audio file.
+ */
+Media.prototype.pause = function() {
+    exec(null, this.errorCallback, "Media", "pausePlayingAudio", [this.id]);
+};
+
+/**
+ * Get duration of an audio file.
+ * The duration is only set for audio that is playing, paused or stopped.
+ *
+ * @return      duration or -1 if not known.
+ */
+Media.prototype.getDuration = function() {
+    return this._duration;
+};
+
+/**
+ * Get position of audio.
+ */
+Media.prototype.getCurrentPosition = function(success, fail) {
+    var me = this;
+    exec(function(p) {
+        me._position = p;
+        success(p);
+    }, fail, "Media", "getCurrentPositionAudio", [this.id]);
+};
+
+/**
+ * Start recording audio file.
+ */
+Media.prototype.startRecord = function() {
+    exec(null, this.errorCallback, "Media", "startRecordingAudio", [this.id, this.src]);
+};
+
+/**
+ * Stop recording audio file.
+ */
+Media.prototype.stopRecord = function() {
+    exec(null, this.errorCallback, "Media", "stopRecordingAudio", [this.id]);
+};
+
+/**
+ * Release the resources.
+ */
+Media.prototype.release = function() {
+    exec(null, this.errorCallback, "Media", "release", [this.id]);
+};
+
+/**
+ * Adjust the volume.
+ */
+Media.prototype.setVolume = function(volume) {
+    exec(null, null, "Media", "setVolume", [this.id, volume]);
+};
+
+/**
+ * Audio has status update.
+ * PRIVATE
+ *
+ * @param id            The media object id (string)
+ * @param msgType       The 'type' of update this is
+ * @param value         Use of value is determined by the msgType
+ */
+Media.onStatus = function(id, msgType, value) {
+
+    var media = mediaObjects[id];
+
+    if(media) {
+        switch(msgType) {
+            case Media.MEDIA_STATE :
+                media.statusCallback && media.statusCallback(value);
+                if(value == Media.MEDIA_STOPPED) {
+                    media.successCallback && media.successCallback();
+                }
+                break;
+            case Media.MEDIA_DURATION :
+                media._duration = value;
+                break;
+            case Media.MEDIA_ERROR :
+                media.errorCallback && media.errorCallback(value);
+                break;
+            case Media.MEDIA_POSITION :
+                media._position = Number(value);
+                break;
+            default :
+                console.error && console.error("Unhandled Media.onStatus :: " + msgType);
+                break;
+        }
+    }
+    else {
+         console.error && console.error("Received Media.onStatus callback for unknown media :: " + id);
+    }
+
+};
+
+module.exports = Media;
+});
+
+cordova.define("org.apache.cordova.media.MediaError", function(require, exports, module) {/*
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+*/
+
+/**
+ * This class contains information about any Media errors.
+*/
+/*
+ According to :: http://dev.w3.org/html5/spec-author-view/video.html#mediaerror
+ We should never be creating these objects, we should just implement the interface
+ which has 1 property for an instance, 'code'
+
+ instead of doing :
+    errorCallbackFunction( new MediaError(3,'msg') );
+we should simply use a literal :
+    errorCallbackFunction( {'code':3} );
+ */
+
+ var _MediaError = window.MediaError;
+
+
+if(!_MediaError) {
+    window.MediaError = _MediaError = function(code, msg) {
+        this.code = (typeof code != 'undefined') ? code : null;
+        this.message = msg || ""; // message is NON-standard! do not use!
+    };
+}
+
+_MediaError.MEDIA_ERR_NONE_ACTIVE    = _MediaError.MEDIA_ERR_NONE_ACTIVE    || 0;
+_MediaError.MEDIA_ERR_ABORTED        = _MediaError.MEDIA_ERR_ABORTED        || 1;
+_MediaError.MEDIA_ERR_NETWORK        = _MediaError.MEDIA_ERR_NETWORK        || 2;
+_MediaError.MEDIA_ERR_DECODE         = _MediaError.MEDIA_ERR_DECODE         || 3;
+_MediaError.MEDIA_ERR_NONE_SUPPORTED = _MediaError.MEDIA_ERR_NONE_SUPPORTED || 4;
+// TODO: MediaError.MEDIA_ERR_NONE_SUPPORTED is legacy, the W3 spec now defines it as below.
+// as defined by http://dev.w3.org/html5/spec-author-view/video.html#error-codes
+_MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED = _MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || 4;
+
+module.exports = _MediaError;
+});
+
+//
+//      Splash
 //
 
 cordova.define("org.apache.cordova.splashscreen.SplashScreen", function(require, exports, module) {/*
@@ -2626,7 +2908,7 @@ module.exports = splashscreen;
 });
 
 //
-//      Status
+//      StatusBar
 //
 
 cordova.define("org.apache.cordova.statusbar.statusbar", function(require, exports, module) {/*
