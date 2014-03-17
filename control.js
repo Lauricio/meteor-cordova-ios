@@ -7,7 +7,7 @@
                 //     alert("Resume")
                 // }, false);
      function onDeviceReady() {
-        StatusBar.styleDefault();
+        // StatusBar.styleDefault();
          navigator.splashscreen.hide();
          //iosStatusBar = window.plugins.statusBar;
 
